@@ -153,7 +153,7 @@ class Mpfixinvoice extends Module
             'ajax_url' => $ajax_url,
             'token' => $token,
         ));
-        return $smarty->fetch($this->local_path . 'views/templates/front/invoice.tpl');
+        return $smarty->fetch($this->local_path . 'views/templates/admin/invoice.tpl');
     }
     
     public function hookDisplayInvoice()

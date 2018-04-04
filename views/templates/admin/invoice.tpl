@@ -26,7 +26,6 @@
 <style>
     #edit-panel-background,
     #edit-panel-container,
-    #add-panel-background,
     #add-panel-container
     {
         display: none;
@@ -44,10 +43,11 @@
         z-index: 9999998;
         opacity: 0.7;
     }
-    #edit-panel-container div
+    #edit-panel-container div,
+    #add-panel-container div
     {
-        width: 500px;
-        height: 150px;
+        width: 60%;
+        height: auto;
         position: fixed;
         top: 50%;
         left: 50%;
@@ -60,6 +60,7 @@
 <div id='edit-panel-background'></div>
 <div id="edit-panel-container">
     <div class="edit-panel-content panel">
+        <input type="hidden" id="mpfixinvoice_id_order" value='{$id_order}'>
         <input type="hidden" id="id_document" value=''>
         <table class='table table-data-sheet'>
             <tbody>
@@ -83,23 +84,35 @@
 </div>  
 <div id="add-panel-container">
     <div class="add-panel-content panel">
-        <input type="hidden" id="id_document" value=''>
         <table class='table table-data-sheet'>
             <tbody>
                 <tr>
-                    <td class='fixed-width-sm'><label>{l s='Number' mod='mpfixinvoice'}</label></td>
-                    <td class='fixed-width-md'><input class="input form-control" id="add-number-invoice" value="0"></td>
-                    <td class='fixed-width-sm'><label>{l s='Date' mod='mpfixinvoice'}</label></td>
-                    <td class='fixed-width-md'><input class="input input-date form-control" id="add-date-invoice" value=""></td>
+                    <td class='fixed-width-sm'><label>{l s='Amount' mod='mpfixinvoice'}</label></td>
+                    <td class='fixed-width-md'><input class="input form-control" id="add-payment-amount" value="0"></td>
                 </tr>
                 <tr>
+                    <td class='fixed-width-sm'><label>{l s='Date' mod='mpfixinvoice'}</label></td>
+                    <td class='fixed-width-md'><input class="input input-date form-control" id="add-payment-date" value=""></td>
+                </tr>
+                <tr>
+                    <td class='fixed-width-sm'><label>{l s='Transaction id' mod='mpfixinvoice'}</label></td>
+                    <td class='fixed-width-md'><input class="input form-control" id="add-payment-transaction-id" value=""></td>
+                </tr>
+                <tr>
+                    <td class='fixed-width-sm'><label>{l s='Payment method' mod='mpfixinvoice'}</label></td>
+                    <td class='fixed-width-md'><input class="input form-control" id="add-payment-payment-method" value=""></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
                     <td colspan="5" style="text-align: right;">
-                        <a class="btn btn-default" onclick="javascript:ajaxCallAddSelectedDocument($('#id_document').val());">
+                        <a class="btn btn-default" onclick="javascript:ajaxCallAddSelectedPayment();">
                             <i class='icon icon-pencil-square'></i>
                             {l s='Add' mod='mpfixinvoice'}
                         </a>
                     </td>
                 </tr>
+            </tfoot>
             </tbody>
         </table>
     </div>
@@ -268,6 +281,7 @@
         $(titles).find('th:nth-child(1)').css('width', '98px');
         $(titles).find('th:nth-child(2)').css('width', '150px');
         $(titles).find('th:nth-child(3)').css('width', '100px');
+        $(table).append(addButtonAddPayment());
     }
     
     /**
@@ -282,21 +296,31 @@
         $('#formAddPayment table tbody tr').each(function(){
             $(this).find('td:last').remove();
             if(!$(this).hasClass('payment_information') && !$(this).hasClass('current-edit')) {
-                var i_delete = createIcon('icon-times', '#BB5555');
+                var i_delete = createIcon('icon-trash', '#BB5555');
                 var a_delete = createLink(i_delete, 'javascript:actionSelectedTableRowPayment(this, "delete");');
                         
                 var i_default = createIcon('icon-star', '#5555BB');
                 var a_default = createLink(i_default, 'javascript:actionSelectedTableRowPayment(this, "default");');
-                
-                var i_add = createIcon('icon-plus', '#55BB55');
-                var a_add = createLink(i_add, 'javascript:actionSelectedTableRowPayment(this, "add");');
                         
-                var td = $('<td></td>').append(a_add).append(a_default).append(a_delete);
+                var td = $('<td></td>').append(a_default).append(a_delete);
                 $(this).append('<td>'+$(td).html()+'</td>');
             }
         });
         return true;
     }
+    
+    function addButtonAddPayment()
+    {
+        var i_add = createIcon('icon-plus', '#55BB55', '{l s='Add new payment' mod='mpfixinvoice'}');
+        var a_add = createLink(i_add, 'javascript:actionSelectedTableRowPayment(this, "add");');
+        var tfoot = $('<tfoot></tfoot>');
+        var tr = $('<tr></tr>');
+        var th = $('<th></th>');
+        $(th).attr('colspan', 6).css('text-align', 'right').html(getItemHTML(a_add));
+        var item = $(tfoot).append($(tr).append($(th)));
+        return getItemHTML(item);
+    }
+    
     function ajaxCallFixNumberDocumentDisplay(tr)
     {
         $.ajax({
@@ -337,9 +361,9 @@
             );
         if (!text || 0 !== text.length) {
             var span = $('<span></span').append(icon).append(text);
-            html = $('<div></div>').append(span).html();
+            html = getItemHTML(span);
         } else {
-            html = $('<div></div>').append(icon).html();
+            html = getItemHTML(icon);
         }
         return html;
     }
@@ -357,9 +381,12 @@
                         "margin-right": "8px"
                     }
                 );
-        html = $('<div></div>').append(a).html();
-        console.log('createLink: ', html);
-        return html;
+        return getItemHTML(a);
+    }
+    
+    function getItemHTML(item)
+    {
+        return $('<div></div>').append(item).html();
     }
     
     function addDocumentColumn(title=false)
@@ -383,7 +410,8 @@
     
     function addPaymentColumn(title=false)
     {
-        
+        var i_add = createIcon('icon-plus', '#55BB55');
+        var a_add = createLink(i_add, 'javascript:actionSelectedTableRowPayment(this, "add");');
     }
     
     function actionSelectedTableRowDocument(item, action)
@@ -437,14 +465,17 @@
                 return false;
             }
             var id_document = String(id_document = $(item).closest('tr').attr('id')).trim();
+            var date_payment = String($(item).closest('tr').find('td:first').text()).trim();
             if (action==="delete") {
-                ajaxCallDeleteSelectedPayment(id_document);
+                if(ajaxCallDeleteSelectedPayment(date_payment) === true) {
+                    $(row).remove();
+                }
             } else if (action==="default") {
-                ajaxCallDefaultSelectedPayment(id_document);
+                ajaxCallDefaultSelectedPayment(date_payment);
             } else if (action==="add") {
                 $('#id_document').val(id_document);
                 $('#add-panel-container').fadeIn(function(){
-                    $('#add-panel-background').fadeIn();
+                    $('#edit-panel-background').fadeIn();
                 });
             }
         });
@@ -468,12 +499,15 @@
         .done(function(result){
             if (result.error) {
                 $.growl.error({ size: "large", title: result.title, message: result.message });
+                return false;
             } else {
                 $.growl.notice({ size: "large", title: result.title, message: result.message });
+                return true;
             }
         })
         .fail(function(){
             jAlert("{l s='Error during deletion.' mod='mpfixinvoice'}", '{l s='Error' mod='mpfixinvoice'}');
+            return false;
         });
     }
     
@@ -510,10 +544,109 @@
         });
     }
     
-    function ajaxCallAddSelectedDocument(id_document)
+    function ajaxCallDefaultSelectedPayment(date_payment)
+    {
+        var id_order_invoices = new Array();
+        $('#documents_table tbody tr').each(function(){
+            var id = String($(this).attr('id')).split('_');
+            if (id[0]==='invoice') {
+                id_order_invoices.push(id[1]);
+            }
+        });
+        $.ajax({
+                type: 'POST',
+                dataType: 'json',
+                url: '{$ajax_url|escape:'htmlall':'UTF-8'}',
+                useDefaultXhrHeader: false,
+                data: 
+                {
+                    token: '{$token|escape:'htmlall':'UTF-8'}',
+                    ajax: true,
+                    action: 'defaultSelectedPayment',
+                    id_order: $('#mpfixinvoice_id_order').val(),
+                    date_payment: date_payment,
+                    id_order_invoice: id_order_invoices
+                }
+        })
+        .done(function(result){
+            if (result.error) {
+                $.growl.error({ size: "large", title: result.title, message: result.message });
+            } else {
+                $.growl.notice({ size: "large", title: result.title, message: result.message });
+            }
+        })
+        .fail(function(){
+            jAlert("{l s='Error adding a new payment.' mod='mpfixinvoice'}", '{l s='Error' mod='mpfixinvoice'}');
+        });
+    }
+    
+    function ajaxCallDeleteSelectedPayment(date_payment)
+    {
+        $.ajax({
+                type: 'POST',
+                dataType: 'json',
+                url: '{$ajax_url|escape:'htmlall':'UTF-8'}',
+                useDefaultXhrHeader: false,
+                data: 
+                {
+                    token: '{$token|escape:'htmlall':'UTF-8'}',
+                    ajax: true,
+                    action: 'deleteSelectedPayment',
+                    id_order: $('#mpfixinvoice_id_order').val(),
+                    date_payment: date_payment
+                }
+        })
+        .done(function(result){
+            if (result.error) {
+                $.growl.error({ size: "large", title: result.title, message: result.message });
+            } else {
+                $.growl.notice({ size: "large", title: result.title, message: result.message });
+            }
+        })
+        .fail(function(){
+            jAlert("{l s='Error adding a new payment.' mod='mpfixinvoice'}", '{l s='Error' mod='mpfixinvoice'}');
+        });
+    }
+    
+    function ajaxCallAddSelectedPayment()
     {
         $('#add-panel-container').fadeOut(function(){
-            $('#add-panel-background').fadeOut();
+            $('#edit-panel-background').fadeOut();
+        });
+        
+        $.ajax({
+                type: 'POST',
+                dataType: 'json',
+                url: '{$ajax_url|escape:'htmlall':'UTF-8'}',
+                useDefaultXhrHeader: false,
+                data: 
+                {
+                    token: '{$token|escape:'htmlall':'UTF-8'}',
+                    ajax: true,
+                    action: 'addNewPayment',
+                    id_order: $('#mpfixinvoice_id_order').val(),
+                    amount_payment: $('#add-payment-amount').val(),
+                    date_payment: $('#add-payment-date').val(),
+                    transaction_id: $('#add-payment-transaction-id').val(),
+                    payment_method: $('#add-payment-payment-method').val()
+                }
+        })
+        .done(function(result){
+            if (result.error) {
+                $.growl.error({ size: "large", title: result.title, message: result.message });
+            } else {
+                $.growl.notice({ size: "large", title: result.title, message: result.message });
+            }
+        })
+        .fail(function(){
+            jAlert("{l s='Error adding a new payment.' mod='mpfixinvoice'}", '{l s='Error' mod='mpfixinvoice'}');
+        });
+    }
+    
+    function ajaxCallAddSelectedDocument(id_document)
+    {
+        $('#edit-panel-container').fadeOut(function(){
+            $('#edit-panel-background').fadeOut();
         });
         
         $.ajax({

@@ -277,6 +277,7 @@ class Mpfixinvoice extends Module
         $number_document = (int)Tools::getValue('number_document', 0);
         $date_document= Tools::getValue('date_document');
         $id_document = explode('_', $input_id_document);
+        $id_order = 0;
         /** Check validity **/
         if (count($id_document)!=2) {
             $this->ajaxProcessPrintMessageResult($this->l('Document type not valid.'), true);
@@ -298,14 +299,24 @@ class Mpfixinvoice extends Module
             $invoice = new OrderInvoiceCore($id_document[1]);
             $invoice->date_add = $date_document;
             $invoice->number = $number_document;
+            $id_order = $invoice->id_order;
             $result = $invoice->update();
         } else {
             $delivery = new OrderInvoiceCore($id_document[1]);
             $delivery->delivery_date = $date_document;
             $delivery->delivery_number = $number_document;
+            $id_order = $delivery->id_order;
             $result = $delivery->update();
         }
         if ($result) {
+            $order = new OrderCore($id_order);
+            if ($result && $id_document[0]=='invoice') {
+                $order->invoice_date = $date_document;
+                $order->update();
+            } elseif ($result && $id_document[0]=='delivery') {
+                $order->delivery_date = $date_document;
+                $order->update();
+            }
             $this->ajaxProcessPrintMessageResult($this->l('Operation Done.'), false);
         } else {
             $this->ajaxProcessPrintMessageResult(Db::getInstance()->getMsgError(), true);

@@ -42,12 +42,12 @@ class AdminMpFixInvoiceController extends ModuleAdminController
         $this->id_lang = (int)ContextCore::getContext()->language->id;
         $this->bootstrap = true;
         $this->context = Context::getContext();
-        $this->className = 'AdminMpMassiveTags';
+        $this->className = 'AdminMpFixInvoice';
         $this->token = Tools::getValue('token', Tools::getAdminTokenLite($this->className));
         $this->messages = array();
         $this->local_path = dirname(__FILE__) . '/../../';
         parent::__construct();
-        $this->adminClassName = $this->module->adminClassName;
+        $this->adminClassName = $this->className;
     }
 
     public function initContent()
@@ -56,7 +56,7 @@ class AdminMpFixInvoiceController extends ModuleAdminController
         $this->link = new LinkCore();
         $adminLink =  $this->link->getAdminLink($this->className, false);
         $token = Tools::getAdminTokenLite($this->className);
-        $smartyFetch = $this->local_path . 'views/templates/admin/configuration.tpl';
+        $smartyFetch = $this->module->getPath() . 'views/templates/admin/configuration.tpl';
         $this->errors = array();
         $this->messages = array();
         $output = array();
@@ -73,12 +73,12 @@ class AdminMpFixInvoiceController extends ModuleAdminController
                 $output[] = $this->module->displayConfirmation($this->l('Operation done.'));
             }
         }
-        $this->smarty->assign('module_dir', $this->module->uriPath);
+        $this->smarty->assign('module_dir', $this->module->getPath());
         $this->smarty->assign(array(
             'token' => $token,
             'form_link' => $adminLink,
         ));
-        $output[] = $this->smarty->fetch($this->local_path.'views/templates/admin/configuration.tpl');
+        $output[] = $this->smarty->fetch($this->module->getPath().'views/templates/admin/configuration.tpl');
         $form =  implode('<br/>',$output);
         
         $this->content = $this->displayMessages() . $form;

@@ -68,12 +68,21 @@ class Mpfixinvoice extends Module
             $this->registerHook('displayAdminOrder') &&
             $this->registerHook('displayInvoice') &&
             $this->registerHook('displayPDFInvoice') && 
+            $this->registerHook('displayAdminOrderContentOrder') && 
+            $this->registerHook('displayAdminOrderTabOrder') && 
+            $this->registerHook('displayAdminOrdersListBefore') && 
+            $this->registerHook('displayAdminOrdersView') &&
+            $this->registerHook('displayAdminOrder') &&
             $this->installTab('adminParentOrders', $this->adminClassName, $this->l('Invoices list'));
     }
 
     public function uninstall()
     {
-        return parent::uninstall() && $this->uninstallTab($this->adminClassName);
+        try {
+            return parent::uninstall() && $this->uninstallTab($this->adminClassName);
+        } catch (Exception $ex) {
+            return true;
+        }
     }
     
     public function installTab($parent, $class_name, $name, $active = 1)
@@ -106,6 +115,60 @@ class Mpfixinvoice extends Module
             $tab = new Tab((int)$id_tab);
             return $tab->delete();
         }
+    }
+
+    /**
+     * Return the admin class name
+     * @return string Admin class name
+     */
+    public function getAdminClassName()
+    {
+        return $this->adminClassName;
+    }
+    
+    /**
+     * Return the Admin Template Path
+     * @return string The admin template path
+     */
+    public function getAdminTemplatePath()
+    {
+        return $this->getPath().'views/templates/admin/';
+    }
+    
+    /**
+     * Get the Id of current language
+     * @return int id language
+     */
+    public function getIdLang()
+    {
+        return (int)$this->id_lang;
+    }
+    
+    /**
+     * Get the Id of current shop
+     * @return int id shop
+     */
+    public function getIdShop()
+    {
+        return (int)$this->id_shop;
+    }
+    
+    /**
+     * Get The URL path of this module
+     * @return string The URL of this module
+     */
+    public function getUrl()
+    {
+        return $this->_path;
+    }
+    
+    /**
+     * Return the physical path of this module
+     * @return string The path of this module
+     */
+    public function getPath()
+    {
+        return $this->local_path;
     }
     
     /**
@@ -155,7 +218,27 @@ class Mpfixinvoice extends Module
         ));
         return $smarty->fetch($this->local_path . 'views/templates/admin/invoice.tpl');
     }
-    
+
+    public function hookDisplayAdminOrderContentOrder()
+    {
+        //return "<h1>".__FUNCTION__."</h1>";
+    }
+
+    public function hookDisplayAdminOrderTabOrder()
+    {
+        //return "<h1>".__FUNCTION__."</h1>";
+    }
+
+    public function hookDisplayAdminOrdersListBefore()
+    {
+        //return "<h1>".__FUNCTION__."</h1>";
+    }
+
+    public function hookDisplayAdminOrdersView()
+    {
+        //return "<h1>".__FUNCTION__."</h1>";
+    }
+
     public function hookDisplayInvoice()
     {
         PrestaShopLoggerCore::addLog('hookDisplayInvoice');
@@ -328,6 +411,8 @@ class Mpfixinvoice extends Module
     {
         $input_id_document = Tools::getValue('id_document', '');
         $id_document = explode('_', $input_id_document);
+        $id_order = (int)Tools::getValue('id_order');
+        
         /** Check validity **/
         if (count($id_document)!=2) {
             $this->ajaxProcessPrintMessageResult($this->l('Document type not valid.'), true);
@@ -340,23 +425,42 @@ class Mpfixinvoice extends Module
         }
         /** Process document **/
         if ($id_document[0]=='invoice') {
-            $invoice = new OrderInvoiceCore($id_document[1]);
+            
+            $db = Db::getInstance();
+            $sql = new DbQueryCore();
+            $sql->select('invoice_number')
+                ->from('orders')
+                ->where('id_order='.(int)$id_order);
+            $id_invoice = (int)$db->getValue($sql);
+            PrestaShopLoggerCore::addLog('Delete invoice: '. $id_invoice);
+            
+            $invoice = new OrderInvoiceCore($id_invoice);
             $invoice->date_add = '1970-01-01 00:00:00';
             $invoice->number = 0;
             $result = $invoice->update(true);
             if ($result) {
                 $order = new OrderCore($invoice->id_order);
                 $order->invoice_number = 0;
+                $order->invoice_date = '1970-01-01 00:00:00';
                 $order->update();
             }
         } else {
-            $delivery = new OrderInvoiceCore($id_document[1]);
+            $db = Db::getInstance();
+            $sql = new DbQueryCore();
+            $sql->select('id_order_invoice')
+                ->from('order_invoice')
+                ->where('id_order='.(int)$id_order);
+            $id_delivery = (int)$db->getValue($sql);
+            PrestaShopLoggerCore::addLog('Delete delivery: '. $id_delivery);
+            
+            $delivery = new OrderInvoiceCore($id_delivery);
             $delivery->delivery_date = '1970-01-01 00:00:00';
             $delivery->delivery_number = 0;
             $result = $delivery->update();
             if ($result) {
                 $order = new OrderCore($delivery->id_order);
                 $order->delivery_number = 0;
+                $order->delivery_date = '1970-01-01 00:00:00';
                 $order->update();
             }
         }

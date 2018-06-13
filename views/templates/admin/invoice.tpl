@@ -119,6 +119,7 @@
 </div>              
 <script>
     var id_document = '';
+    var id_order = '{$id_order}';
     $(document).ready(function(){
         /** After page is ready **/
         $(window).load(function(){
@@ -493,7 +494,8 @@
                     token: '{$token|escape:'htmlall':'UTF-8'}',
                     ajax: true,
                     action: 'deleteSelectedDocument',
-                    id_document: id_document
+                    id_document: id_document,
+                    id_order: id_order
                 }
         })
         .done(function(result){
